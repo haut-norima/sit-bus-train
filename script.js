@@ -1,3 +1,9 @@
+//大学内の主要な建物から何分後にバス停に出発すればよいかを確認できるwebアプリです!
+//このwebアプリは芝浦工大の学バスオープンデータを使用しています!
+//思いついて即興でAIに書かせたコードなので拙いです...ご了承ください!
+//
+//制作者 CY25061
+
 const locations = {
     "生協": {"walk": 2, "run": 1},
     "記念館": {"walk": 3, "run": 2},
@@ -129,6 +135,14 @@ function findNextTrain(arrivalTime, trainTimes) {
     return null;
 }
 
+/**
+ * 各地点ごとに適切なメッセージを生成します。
+ * @param {String} locationName - 地点の名前
+ * @param {Object} times - walkおよびrunの時間
+ * @param {Array} nextBuses - 次のバスのリスト
+ * @param {Array} trainTimes - 次の電車のリスト
+ * @returns {String} - 生成されたメッセージ
+ */
 function generateMessage(locationName, times, nextBuses, trainTimes) {
     if (nextBuses.length === 0) {
         return `${locationName}: 本日のバスはもうありません。`;
@@ -142,7 +156,7 @@ function generateMessage(locationName, times, nextBuses, trainTimes) {
 
     if (nextBus.isTemporary) {
         message = "この時間は適時運行です";
-        arrivalTime = new Date(Date.now() + (walkTime + 13) * 60000);
+        arrivalTime = new Date(Date.now() + (walkTime + 13) * 60000); // 現在の時刻にwalkTime + 13分を加算
     } else {
         const walkTimeLeft = nextBus.minutes - walkTime;
         if (walkTimeLeft >= 3) {
@@ -156,12 +170,16 @@ function generateMessage(locationName, times, nextBuses, trainTimes) {
             } else if (nextBuses.length > 1) {
                 const nextNextBus = nextBuses[1];
                 const timeToNextNextBus = nextNextBus.minutes - walkTime;
-                return `${locationName}: 次のバスをご利用ください（次は ${timeToNextNextBus.toFixed(1)} 分後です。）`;
+                if (timeToNextNextBus >= 0) {
+                    return `${locationName}: 次のバスをご利用ください（次は ${timeToNextNextBus.toFixed(1)} 分後です。）`;
+                } else {
+                    return `${locationName}: 次のバスをご利用ください（次は本日中にありません）`;
+                }
             } else {
                 return `${locationName}: 次のバスをご利用ください（次は本日中にありません）`;
             }
         }
-        arrivalTime = new Date(nextBus.time.getTime() + 10 * 60000);
+        arrivalTime = new Date(nextBus.time.getTime() + 10 * 60000); // バス到着後10分
     }
 
     const nextTrain = findNextTrain(arrivalTime, trainTimes);
@@ -194,6 +212,10 @@ function generateMessage(locationName, times, nextBuses, trainTimes) {
     return finalMessage;
 }
 
+/**
+ * メッセージを表示します。
+ * @param {String} selectedLocation - 選択された出発地点
+ */
 async function displayMessages(selectedLocation = "") {
     const data = await fetchBusData();
     if (!data) {
