@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>次のバスと電車の時刻</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+    <h1>次のバスと電車の時刻</h1>
+
+    <!-- 出発地点の選択 -->
+    <div class="selection">
+        <label for="departure">出発地点を選択してください:</label>
+        <select id="departure">
+            <option value="">全ての場所</option>
+            <option value="生協">生協</option>
+            <option value="記念館">記念館</option>
+            <option value="2号館">2号館</option>
+            <option value="3号館">3号館</option>
+            <option value="4号館">4号館</option>
+            <option value="5号館">5号館</option>
+            <option value="6号館">6号館</option>
+            <option value="図書館">図書館</option>
+        </select>
+    </div>
+
+    <div id="messages">
+        <!-- 各場所のメッセージがここに表示されます -->
+    </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
