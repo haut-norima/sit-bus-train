@@ -74,6 +74,116 @@ function parseTrainTimes(entry, direction) {
 }
 
 /**
+ * 各地点ごとに適切なメッセージを生成します。
+ * @param {String} locationName - 地点の名前
+ * @param {Object} times - walkおよびrunの時間
+ * @param {Array} schedule - スケジュールのリスト
+ * @param {Array} allTrainTimes - 全電車時刻のリスト
+ * @returns {String} - 生成されたメッセージ
+ */
+function generateMessage(locationName, times, schedule, allTrainTimes) {
+    const currentTime = new Date();
+
+    // 徒歩での到着時刻
+    const arrivalTimeWalk = new Date(currentTime.getTime() + times.walk * 60000);
+    console.log(`\n==== ${locationName} ====`);
+    console.log(`Walk Time: ${times.walk}分, Run Time: ${times.run}分`);
+    console.log(`Arrival Time Walk: ${arrivalTimeWalk}`);
+
+    // 次のバスを見つける
+    const nextBus = findNextBus(schedule, arrivalTimeWalk);
+    console.log(`Next Bus: ${nextBus ? nextBus.time : 'なし'}, Is Temporary: ${nextBus ? nextBus.isTemporary : 'N/A'}`);
+
+    if (!nextBus) {
+        return `${locationName}: 本日のバスはもうありません。`;
+    }
+
+    let message = "";
+    let arrivalTime; // 電車を待つ時刻
+
+    if (nextBus.isTemporary) {
+        message = "この時間は適時運行です";
+        // 適時運行の場合、現在時刻 + walk_time + 13分後を到着時刻とする
+        arrivalTime = new Date(currentTime.getTime() + (times.walk + 13) * 60000);
+    } else {
+        // バス待ち時間
+        const walkTimeLeft = (nextBus.time - arrivalTimeWalk) / 60000;
+        console.log(`Walk Time Left: ${walkTimeLeft}分`);
+
+        if (walkTimeLeft >= 3) {
+            message = "余裕をもって移動できます";
+        } else if (walkTimeLeft >= 1) {
+            message = "すぐ出発すれば間に合います";
+        } else {
+            // 走りで移動した場合の待ち時間
+            const runArrivalTime = new Date(currentTime.getTime() + times.run * 60000);
+            const runTimeLeft = (nextBus.time - runArrivalTime) / 60000;
+            console.log(`Run Time Left: ${runTimeLeft}分`);
+
+            if (runTimeLeft >= 0.5) {
+                message = "急げば間に合います";
+            } else {
+                // 次のバスを探す
+                const nextBusAfter = findNextBus(schedule, new Date(nextBus.time.getTime() + 60000)); // 1分後のバス
+                if (nextBusAfter) {
+                    const timeToNextNextBus = (nextBusAfter.time - arrivalTimeWalk) / 60000;
+                    if (timeToNextNextBus >= 0) {
+                        message = `${locationName}: 次のバスをご利用ください（次は ${timeToNextNextBus.toFixed(1)} 分後です。）`;
+                    } else {
+                        message = `${locationName}: 次のバスをご利用ください（次は本日中にありません）`;
+                    }
+                } else {
+                    message = `${locationName}: 次のバスをご利用ください（次は本日中にありません）`;
+                }
+                return message;
+            }
+        }
+
+        // バス到着後10分を待ち時間として電車の到着時刻を計算
+        arrivalTime = new Date(nextBus.time.getTime() + 10 * 60000);
+    }
+
+    console.log(`Arrival Time for Train: ${arrivalTime}`);
+
+    // 次の電車を見つける
+    const nextTrain = findNextTrain(allTrainTimes, arrivalTime);
+    console.log(`Next Train: ${nextTrain ? `${nextTrain.time} 行き先: ${nextTrain.destination}` : 'なし'}`);
+
+    let trainMessage = "";
+    if (nextTrain) {
+        const hours = nextTrain.time.getHours().toString().padStart(2, '0');
+        const minutes = nextTrain.time.getMinutes().toString().padStart(2, '0');
+        const minutesUntilNextTrain = (nextTrain.time - arrivalTime) / 60000;
+
+        if (minutesUntilNextTrain >= 60) {
+            const waitHours = Math.floor(minutesUntilNextTrain / 60);
+            const waitMinutes = Math.floor(minutesUntilNextTrain % 60);
+            trainMessage = `次の上り電車は ${hours}:${minutes} 行き先: ${nextTrain.destination} で、予想到着時間は ${waitHours} 時間 ${waitMinutes} 分後です。`;
+        } else {
+            trainMessage = `次の上り電車は ${hours}:${minutes} 行き先: ${nextTrain.destination} で、予想到着時間は ${minutesUntilNextTrain.toFixed(1)} 分後です。`;
+        }
+    } else {
+        trainMessage = "本日中に次の電車はありません。";
+    }
+
+    // 最終メッセージの生成
+    let finalMessage = "";
+    if (nextBus.isTemporary) {
+        finalMessage = `${locationName}: ${message}。${trainMessage}`;
+    } else {
+        const waitMinutes = (nextBus.time - arrivalTimeWalk) / 60000;
+        finalMessage = `${locationName}: ${message}（バス停に到着してから ${waitMinutes.toFixed(1)} 分でバスが来ます）。${trainMessage}`;
+    }
+
+    if ((nextBus.time - arrivalTimeWalk) / 60000 > 20) {
+        finalMessage += "（徒歩を推奨します）";
+    }
+
+    console.log(`Final Message: ${finalMessage}`);
+    return finalMessage;
+}
+
+/**
  * スケジュールから指定された時刻以降の次のバスを見つけます。
  * @param {Array} schedule - バスおよび電車のスケジュールリスト
  * @param {Date} arrivalTime - バス停に到着する時刻
@@ -145,102 +255,6 @@ function findNextTrain(trainTimes, arrivalTime) {
 }
 
 /**
- * 各地点ごとに適切なメッセージを生成します。
- * @param {String} locationName - 地点の名前
- * @param {Object} times - walkおよびrunの時間
- * @param {Array} schedule - スケジュールのリスト
- * @param {Array} allTrainTimes - 全電車時刻のリスト
- * @returns {String} - 生成されたメッセージ
- */
-function generateMessage(locationName, times, schedule, allTrainTimes) {
-    const currentTime = new Date();
-
-    // 徒歩での到着時刻
-    const arrivalTimeWalk = new Date(currentTime.getTime() + times.walk * 60000);
-
-    // 次のバスを見つける
-    const nextBus = findNextBus(schedule, arrivalTimeWalk);
-
-    if (!nextBus) {
-        return `${locationName}: 本日のバスはもうありません。`;
-    }
-
-    let message = "";
-    let arrivalTime; // 電車を待つ時刻
-
-    if (nextBus.isTemporary) {
-        message = "この時間は適時運行です";
-        // 適時運行の場合、現在時刻 + walk_time + 13分後を到着時刻とする
-        arrivalTime = new Date(currentTime.getTime() + (times.walk + 13) * 60000);
-    } else {
-        // バス待ち時間
-        const walkTimeLeft = (nextBus.time - arrivalTimeWalk) / 60000;
-
-        if (walkTimeLeft >= 3) {
-            message = "余裕をもって移動できます";
-        } else if (walkTimeLeft >= 1) {
-            message = "すぐ出発すれば間に合います";
-        } else {
-            // 走りで移動した場合の待ち時間
-            const runArrivalTime = new Date(currentTime.getTime() + times.run * 60000);
-            const runTimeLeft = (nextBus.time - runArrivalTime) / 60000;
-
-            if (runTimeLeft >= 0.5) {
-                message = "急げば間に合います";
-            } else {
-                // 次のバスを探す
-                const nextBusAfter = findNextBus(schedule, new Date(nextBus.time.getTime() + 60000)); // 1分後のバス
-                if (nextBusAfter) {
-                    const timeToNextNextBus = (nextBusAfter.time - arrivalTimeWalk) / 60000;
-                    message = `${locationName}: 次のバスをご利用ください（次は ${timeToNextNextBus.toFixed(1)} 分後です。）`;
-                } else {
-                    message = `${locationName}: 次のバスをご利用ください（次は本日中にありません）`;
-                }
-                return message;
-            }
-        }
-
-        // バス到着後10分を待ち時間として電車の到着時刻を計算
-        arrivalTime = new Date(nextBus.time.getTime() + 10 * 60000);
-    }
-
-    // 次の電車を見つける
-    const nextTrain = findNextTrain(allTrainTimes, arrivalTime);
-
-    let trainMessage = "";
-    if (nextTrain) {
-        const hours = nextTrain.time.getHours().toString().padStart(2, '0');
-        const minutes = nextTrain.time.getMinutes().toString().padStart(2, '0');
-        const minutesUntilNextTrain = (nextTrain.time - arrivalTime) / 60000;
-
-        if (minutesUntilNextTrain >= 60) {
-            const waitHours = Math.floor(minutesUntilNextTrain / 60);
-            const waitMinutes = Math.floor(minutesUntilNextTrain % 60);
-            trainMessage = `次の上り電車は ${hours}:${minutes} 行き先: ${nextTrain.destination} で、予想到着時間は ${waitHours} 時間 ${waitMinutes} 分後です。`;
-        } else {
-            trainMessage = `次の上り電車は ${hours}:${minutes} 行き先: ${nextTrain.destination} で、予想到着時間は ${minutesUntilNextTrain.toFixed(1)} 分後です。`;
-        }
-    } else {
-        trainMessage = "本日中に次の電車はありません。";
-    }
-
-    // 最終メッセージの生成
-    let finalMessage = "";
-    if (nextBus.isTemporary) {
-        finalMessage = `${locationName}: ${message}。${trainMessage}`;
-    } else {
-        const waitMinutes = (nextBus.time - arrivalTimeWalk) / 60000;
-        finalMessage = `${locationName}: ${message}（バス停に到着してから ${waitMinutes.toFixed(1)} 分でバスが来ます）。${trainMessage}`;
-    }
-
-    if ((nextBus.time - arrivalTimeWalk) / 60000 > 20) {
-        finalMessage += "（徒歩を推奨します）";
-    }
-
-    return finalMessage;
-}
-
-/**
  * メッセージを表示します。
  * @param {String} selectedLocation - 選択された出発地点
  */
@@ -272,8 +286,8 @@ async function displayMessages(selectedLocation = "") {
     const messagesContainer = document.getElementById('messages');
     messagesContainer.innerHTML = "";
 
-    // フィルタリング: 選択された出発地点に基づいて処理
-    const locationsToDisplay = selectedLocation ? { [selectedLocation]: locations[selectedLocation] } : locations;
+    // 選択された出発地点に基づいて処理
+    const locationsToDisplay = { [selectedLocation]: locations[selectedLocation] };
 
     for (const [locationName, times] of Object.entries(locationsToDisplay)) {
         const message = generateMessage(locationName, times, schedule, allTrainTimes);
@@ -297,8 +311,9 @@ async function displayMessages(selectedLocation = "") {
 document.addEventListener('DOMContentLoaded', () => {
     const departureSelect = document.getElementById('departure');
 
-    // 初回表示: 全ての場所を表示
-    displayMessages();
+    // 初回表示: デフォルトの選択地点を表示
+    const initialLocation = departureSelect.value;
+    displayMessages(initialLocation);
 
     // 選択が変更されたときにメッセージを更新
     departureSelect.addEventListener('change', (event) => {
@@ -306,9 +321,9 @@ document.addEventListener('DOMContentLoaded', () => {
         displayMessages(selectedLocation);
     });
 
-    // 定期的にデータを更新（オプション）
+    // 20秒ごとにデータを更新
     setInterval(() => {
         const selectedLocation = departureSelect.value;
         displayMessages(selectedLocation);
-    }, 300000); // 300,000ミリ秒 = 5分
+    }, 20000); // 20,000ミリ秒 = 20秒
 });
