@@ -23,10 +23,15 @@ const destinationSettings = {
     "j": "品川",
 };
 
+/**
+ * CORSプロキシを使用してバスデータを取得します。
+ * @returns {Promise<Object|null>} 取得したデータオブジェクト、またはnull
+ */
 async function fetchBusData() {
-    const url = "http://bus.shibaura-it.ac.jp/db/bus_data.json";
+    const originalURL = "http://bus.shibaura-it.ac.jp/db/bus_data.json";
+    const proxyURL = "https://api.allorigins.win/raw?url=" + encodeURIComponent(originalURL);
     try {
-        const response = await fetch(url);
+        const response = await fetch(proxyURL);
         if (!response.ok) {
             throw new Error(`ネットワーク応答が良くありません: ${response.statusText}`);
         }
