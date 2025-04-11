@@ -4,14 +4,14 @@
 //
 //制作者 CY25061
 const locations = {
-    "生協": { "walk": 2, "run": 1 },
-    "記念館": { "walk": 3, "run": 2 },
-    "2号館": { "walk": 3.5, "run": 2.5 },
-    "3号館": { "walk": 3.5, "run": 2.5 },
-    "4号館": { "walk": 5, "run": 3 },
-    "5号館": { "walk": 5, "run": 3 },
-    "6号館": { "walk": 5.5, "run": 3.5 },
-    "図書館": { "walk": 5.5, "run": 3.5 },
+    "生協": {"walk": 2, "run": 1},
+    "記念館": {"walk": 3, "run": 2},
+    "2号館": {"walk": 3.5, "run": 2.5},
+    "3号館": {"walk": 3.5, "run": 2.5},
+    "4号館": {"walk": 5, "run": 3},
+    "5号館": {"walk": 5, "run": 3},
+    "6号館": {"walk": 5.5, "run": 3.5},
+    "図書館": {"walk": 5.5, "run": 3.5},
 };
 
 const destinationSettings = {
@@ -68,16 +68,11 @@ function parseTrainTimes(entry, direction) {
                     const minute = parseInt(trainInfo.slice(1, 3), 10);
                     const destinationMark = trainInfo.charAt(0);
                     const destination = destinationSettings[destinationMark] || "不明";
-                    const hour = parseInt(entry['time'], 10); // 'time'は時間のみと仮定
-                    const trainTime = new Date();
-                    trainTime.setHours(hour, minute, 0, 0);
-                    trainTimes.push({ time: trainTime, destination });
+                    trainTimes.push({ minute, destination });
                 }
             });
         }
     });
-    // 時刻でソート
-    trainTimes.sort((a, b) => a.time - b.time);
     return trainTimes;
 }
 
@@ -103,31 +98,14 @@ function findNextBus(schedule, arrivalTime) {
                 busTimes.forEach(busTime => {
                     let busMinute;
                     if (isTemporarySchedule) {
-                        // 適時運行の場合、出発時間を設定しない（常に利用可能）
-                        // ここでは仮に出発時刻を現在時刻から一定後とする
-                        busMinute = arrivalTime.getMinutes();
+                        busMinute = arrivalTime.getMinutes(); // 適時運行の場合、現在の分を使用
                     } else if (/^\d+$/.test(busTime)) {
                         busMinute = parseInt(busTime, 10);
                     } else {
                         return; // 無効な時刻フォーマット
                     }
 
-                    const busDateTime = new Date(
-                        arrivalTime.getFullYear(),
-                        arrivalTime.getMonth(),
-                        arrivalTime.getDate(),
-                        busHour,
-                        busMinute,
-                        0,
-                        0
-                    );
-
-                    // 適時運行の場合、current timeから数分後に設定
-                    if (isTemporarySchedule) {
-                        // 例として、動的に出発時刻を設定（現実の運用に応じて調整）
-                        busDateTime.setMinutes(busDateTime.getMinutes() + 1); // 1分後
-                    }
-
+                    const busDateTime = new Date(arrivalTime.getFullYear(), arrivalTime.getMonth(), arrivalTime.getDate(), busHour, busMinute);
                     if (busDateTime >= arrivalTime) {
                         if (!nextBus || busDateTime < nextBus.time) {
                             nextBus = {
@@ -154,9 +132,14 @@ function findNextTrain(trainTimes, arrivalTime) {
     let nextTrain = null;
 
     trainTimes.forEach(train => {
-        if (train.time >= arrivalTime) {
-            if (!nextTrain || train.time < nextTrain.time) {
-                nextTrain = train;
+        const trainHour = parseInt(train.time, 10);
+        const trainTime = new Date(arrivalTime.getFullYear(), arrivalTime.getMonth(), arrivalTime.getDate(), trainHour, train.minute);
+        if (trainTime >= arrivalTime) {
+            if (!nextTrain || trainTime < nextTrain.time) {
+                nextTrain = {
+                    time: trainTime,
+                    destination: train.destination
+                };
             }
         }
     });
@@ -193,7 +176,7 @@ function generateMessage(locationName, times, schedule, allTrainTimes) {
     let arrivalTime; // 電車を待つ時刻
 
     if (nextBus.isTemporary) {
-        message = `<span class='message-type-ad-hoc'>この時間は適時運行です</span>`;
+        message = `<span class="message-temporary">この時間は適時運行です</span>`;
         // 適時運行の場合、現在時刻 + walk_time + 13分後を到着時刻とする
         arrivalTime = new Date(currentTime.getTime() + (times.walk + 13) * 60000);
     } else {
@@ -202,9 +185,9 @@ function generateMessage(locationName, times, schedule, allTrainTimes) {
         console.log(`Walk Time Left: ${walkTimeLeft}分`);
 
         if (walkTimeLeft >= 3) {
-            message = `<span class='message-type-roomy'>余裕をもって移動できます</span>`;
+            message = `<span class="message-leeway">余裕をもって移動できます</span>`;
         } else if (walkTimeLeft >= 1) {
-            message = `<span class='message-type-immediately'>すぐ出発すれば間に合います</span>`;
+            message = `<span class="message-soon">すぐ出発すれば間に合います</span>`;
         } else {
             // 走りで移動した場合の待ち時間
             const runArrivalTime = new Date(currentTime.getTime() + times.run * 60000);
@@ -212,7 +195,7 @@ function generateMessage(locationName, times, schedule, allTrainTimes) {
             console.log(`Run Time Left: ${runTimeLeft}分`);
 
             if (runTimeLeft >= 0.5) {
-                message = `<span class='message-type-rush'>急げば間に合います</span>`;
+                message = `<span class="message-hurry">急げば間に合います</span>`;
             } else {
                 // 次のバスを探す
                 const nextBusAfter = findNextBus(schedule, new Date(nextBus.time.getTime() + 60000)); // 1分後のバス
@@ -263,7 +246,7 @@ function generateMessage(locationName, times, schedule, allTrainTimes) {
         finalMessage = `${locationName}: ${message}。${trainMessage}`;
     } else {
         const waitMinutes = (nextBus.time - arrivalTimeWalk) / 60000;
-        finalMessage = `${locationName}: ${message}（バス停に到着してから ${waitMinutes.toFixed(1)} 分でバスが来ます）。${trainMessage}`;
+        finalMessage = `${locationName}: ${message}（バス停に到着してから ${(waitMinutes).toFixed(1)} 分でバスが来ます）。${trainMessage}`;
     }
 
     if ((nextBus.time - arrivalTimeWalk) / 60000 > 20) {
@@ -299,7 +282,11 @@ async function displayMessages(selectedLocation = "") {
         if (entry['train_right']) {
             const trainTimes = parseTrainTimes(entry, 'train_right');
             trainTimes.forEach(train => {
-                allTrainTimes.push(train);
+                allTrainTimes.push({
+                    time: entry['time'], // 時間部分
+                    minute: train.minute,
+                    destination: train.destination
+                });
             });
         }
     });
@@ -321,7 +308,7 @@ async function displayMessages(selectedLocation = "") {
 
         const messageTextDiv = document.createElement('div');
         messageTextDiv.className = 'message';
-        messageTextDiv.innerHTML = message; // innerHTMLを使用
+        messageTextDiv.innerHTML = message; // innerHTMLに変更
 
         messageDiv.appendChild(locationDiv);
         messageDiv.appendChild(messageTextDiv);

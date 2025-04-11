@@ -126,25 +126,25 @@ h1 {
     color: #555;
 }
 
-/* メッセージの種類ごとのスタイル */
-.message-type-ad-hoc {
+/* メッセージタイプ別スタイル */
+.message-temporary {
+    color: #FFA500; /* オレンジ色 */
     font-weight: bold;
-    color: #1e90ff; /* 青 */
 }
 
-.message-type-roomy {
+.message-leeway {
+    color: #008000; /* 緑色 */
     font-weight: bold;
-    color: #28a745; /* 緑 */
 }
 
-.message-type-immediately {
+.message-soon {
+    color: #0000FF; /* 青色 */
     font-weight: bold;
-    color: #ffc107; /* 黄色 */
 }
 
-.message-type-rush {
+.message-hurry {
+    color: #FF0000; /* 赤色 */
     font-weight: bold;
-    color: #dc3545; /* 赤 */
 }
 
 /* アニメーショントランジション */
