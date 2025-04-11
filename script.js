@@ -4,6 +4,7 @@
 //
 //制作者 CY25061
 // 定義されたロケーションと設定
+// 定義されたロケーションと設定
 const locations = {
     "生協": { "walk": 2, "run": 1 },
     "記念館": { "walk": 3, "run": 2 },
@@ -27,6 +28,14 @@ const destinationSettings = {
     "h": "国府津",
     "i": "伊東",
     "j": "品川",
+};
+
+// メッセージタイプの定義
+const MESSAGE_TYPES = {
+    NORMAL: 'message-normal',
+    WARNING: 'message-warning',
+    DANGER: 'message-danger',
+    STRONG: 'strong'
 };
 
 /**
@@ -91,39 +100,49 @@ function findNextBus(schedule, arrivalTime) {
             const busHour = parseInt(entry['time'], 10);
             const busRight = entry['bus_right'];
             if (busRight) {
-                const busTimes = busRight['num1'] ? busRight['num1'].split('.') : [];
                 const memo1 = busRight['memo1'] || "";
                 const memo2 = busRight['memo2'] || "";
-                const isTemporarySchedule = memo1.includes('適時運行') || memo2.includes('適時運行');
+                const num1 = busRight['num1'] || "";
+                const isTemporarySchedule = num1.includes('適時運行') || memo1.includes('適時運行') || memo2.includes('適時運行');
 
                 console.log(`Bus Entry Time: ${busHour}, isTemporarySchedule: ${isTemporarySchedule}`);
 
-                busTimes.forEach(busTime => {
-                    let busMinute;
-                    if (isTemporarySchedule) {
-                        busMinute = arrivalTime.getMinutes(); // 適時運行の場合、現在の分を使用
-                    } else if (/^\d+$/.test(busTime)) {
-                        busMinute = parseInt(busTime, 10);
-                    } else {
-                        return; // 無効な時刻フォーマット
+                if (isTemporarySchedule) {
+                    // 適時運行の場合、固定の待ち時間（例：13分）を追加
+                    const busDateTime = new Date(arrivalTime.getTime() + 13 * 60000);
+                    if (!nextBus || busDateTime < nextBus.time) {
+                        nextBus = {
+                            time: busDateTime,
+                            isTemporary: true
+                        };
                     }
-
-                    const busDateTime = new Date(
-                        arrivalTime.getFullYear(),
-                        arrivalTime.getMonth(),
-                        arrivalTime.getDate(),
-                        busHour,
-                        busMinute
-                    );
-                    if (busDateTime >= arrivalTime) {
-                        if (!nextBus || busDateTime < nextBus.time) {
-                            nextBus = {
-                                time: busDateTime,
-                                isTemporary: isTemporarySchedule
-                            };
+                } else {
+                    const busTimes = num1.split('.');
+                    busTimes.forEach(busTime => {
+                        let busMinute;
+                        if (/^\d+$/.test(busTime)) {
+                            busMinute = parseInt(busTime, 10);
+                        } else {
+                            return; // 無効な時刻フォーマット
                         }
-                    }
-                });
+
+                        const busDateTime = new Date(
+                            arrivalTime.getFullYear(),
+                            arrivalTime.getMonth(),
+                            arrivalTime.getDate(),
+                            busHour,
+                            busMinute
+                        );
+                        if (busDateTime >= arrivalTime) {
+                            if (!nextBus || busDateTime < nextBus.time) {
+                                nextBus = {
+                                    time: busDateTime,
+                                    isTemporary: false
+                                };
+                            }
+                        }
+                    });
+                }
             }
         }
     });
@@ -163,14 +182,6 @@ function findNextTrain(trainTimes, arrivalTime) {
     return nextTrain;
 }
 
-// メッセージタイプの定義
-const MESSAGE_TYPES = {
-    NORMAL: 'message-normal',
-    WARNING: 'message-warning',
-    DANGER: 'message-danger',
-    STRONG: 'strong'
-};
-
 /**
  * 各地点ごとに適切なメッセージを生成します。
  * @param {String} locationName - 地点の名前
@@ -201,9 +212,9 @@ function generateMessage(locationName, times, schedule, allTrainTimes) {
 
     if (nextBus.isTemporary) {
         // 「この時間は適時運行です」を太字で赤色に
-        message = `<strong>${"この時間は適時運行です"}</strong>`;
-        // 適時運行の場合、現在時刻 + walk_time + 13分後を到着時刻とする
-        arrivalTime = new Date(currentTime.getTime() + (times.walk + 13) * 60000);
+        message = `<strong>この時間は適時運行です</strong>`;
+        // 適時運行の場合、到着時刻はバス到着後10分
+        arrivalTime = new Date(nextBus.time.getTime() + 10 * 60000);
     } else {
         // バス待ち時間
         const walkTimeLeft = (nextBus.time - arrivalTimeWalk) / 60000;
