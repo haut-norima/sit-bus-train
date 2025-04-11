@@ -5,14 +5,14 @@
 //制作者 CY25061
 // 定義されたロケーションと設定
 const locations = {
-    "生協": {"walk": 2, "run": 1},
-    "記念館": {"walk": 3, "run": 2},
-    "2号館": {"walk": 3.5, "run": 2.5},
-    "3号館": {"walk": 3.5, "run": 2.5},
-    "4号館": {"walk": 5, "run": 3},
-    "5号館": {"walk": 5, "run": 3},
-    "6号館": {"walk": 5.5, "run": 3.5},
-    "図書館": {"walk": 5.5, "run": 3.5},
+    "生協": { "walk": 2, "run": 1 },
+    "記念館": { "walk": 3, "run": 2 },
+    "2号館": { "walk": 3.5, "run": 2.5 },
+    "3号館": { "walk": 3.5, "run": 2.5 },
+    "4号館": { "walk": 5, "run": 3 },
+    "5号館": { "walk": 5, "run": 3 },
+    "6号館": { "walk": 5.5, "run": 3.5 },
+    "図書館": { "walk": 5.5, "run": 3.5 },
 };
 
 const destinationSettings = {
@@ -96,6 +96,8 @@ function findNextBus(schedule, arrivalTime) {
                 const memo2 = busRight['memo2'] || "";
                 const isTemporarySchedule = memo1.includes('適時運行') || memo2.includes('適時運行');
 
+                console.log(`Bus Entry Time: ${busHour}, isTemporarySchedule: ${isTemporarySchedule}`);
+
                 busTimes.forEach(busTime => {
                     let busMinute;
                     if (isTemporarySchedule) {
@@ -126,6 +128,7 @@ function findNextBus(schedule, arrivalTime) {
         }
     });
 
+    console.log(`Next Bus Found: ${nextBus ? nextBus.time : 'なし'}, isTemporary: ${nextBus ? nextBus.isTemporary : 'N/A'}`);
     return nextBus;
 }
 
