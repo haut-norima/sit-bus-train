@@ -1,50 +1,123 @@
+/* 基本スタイル */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
     margin: 0;
     padding: 20px;
+    color: #333;
 }
 
 .container {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
-    background-color: #fff;
-    padding: 20px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
     text-align: center;
-    color: #333;
+    color: #4a90e2;
+    margin-bottom: 20px;
 }
 
+/* 出発地点選択メニュー */
 .selection {
-    margin: 20px 0;
     text-align: center;
+    margin-bottom: 30px;
 }
 
 .selection label {
     margin-right: 10px;
-    font-weight: bold;
+    font-size: 1.1em;
+    color: #555;
 }
 
 .selection select {
-    padding: 5px 10px;
+    padding: 10px 15px;
     font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.selection select:focus {
+    border-color: #4a90e2;
+}
+
+/* ローディングスピナー */
+.loader {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #4a90e2;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 30px auto;
+}
+
+.hidden {
+    display: none;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* メッセージカード */
+.messages {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
 }
 
 .location-message {
-    border-bottom: 1px solid #ddd;
-    padding: 10px 0;
+    background-color: #ffffff;
+    border: 1px solid #e1e4e8;
+    border-radius: 10px;
+    padding: 20px;
+    width: 300px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.location-message.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.location-message:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .location-name {
-    font-weight: bold;
-    font-size: 1.2em;
-    margin-bottom: 5px;
+    font-size: 1.4em;
+    margin-bottom: 10px;
+    color: #4a90e2;
 }
 
 .message {
-    margin-left: 10px;
+    font-size: 1em;
+    line-height: 1.5;
     color: #555;
+}
+
+/* アニメーショントランジション */
+@media (min-width: 600px) {
+    .messages {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 599px) {
+    .location-message {
+        width: 100%;
+    }
 }
