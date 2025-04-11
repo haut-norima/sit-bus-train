@@ -5,6 +5,7 @@
 //制作者 CY25061
 // 定義されたロケーションと設定
 // 定義されたロケーションと設定
+// 定義されたロケーションと設定
 const locations = {
     "生協": { "walk": 2, "run": 1 },
     "記念館": { "walk": 3, "run": 2 },
@@ -96,35 +97,33 @@ function findNextBus(schedule, arrivalTime) {
     let nextBus = null;
 
     schedule.forEach(entry => {
-        if (entry['time'] && /^\d+$/.test(entry['time'])) {
-            const busHour = parseInt(entry['time'], 10);
+        if (entry['bus_right']) {
             const busRight = entry['bus_right'];
-            if (busRight) {
-                const memo1 = busRight['memo1'] || "";
-                const memo2 = busRight['memo2'] || "";
-                const num1 = busRight['num1'] || "";
-                const isTemporarySchedule = num1.includes('適時運行') || memo1.includes('適時運行') || memo2.includes('適時運行');
+            const num1 = busRight['num1'] || "";
+            const memo1 = busRight['memo1'] || "";
+            const memo2 = busRight['memo2'] || "";
 
-                console.log(`Bus Entry Time: ${busHour}, isTemporarySchedule: ${isTemporarySchedule}`);
+            const busTimeEntries = num1.split('.');
 
-                if (isTemporarySchedule) {
-                    // 適時運行の場合、固定の待ち時間（例：13分）を追加
+            busTimeEntries.forEach(busTimeEntry => {
+                // 「適時運行」が含まれる場合
+                if (busTimeEntry.includes('適時運行') || memo1.includes('適時運行') || memo2.includes('適時運行')) {
+                    console.log(`Bus Time Entry "${busTimeEntry}" is Temporary Schedule`);
+                    // 固定の待ち時間（例：13分）を到着時刻に追加
                     const busDateTime = new Date(arrivalTime.getTime() + 13 * 60000);
                     if (!nextBus || busDateTime < nextBus.time) {
                         nextBus = {
                             time: busDateTime,
                             isTemporary: true
                         };
+                        console.log(`Temporary Next Bus Set to: ${busDateTime}`);
                     }
                 } else {
-                    const busTimes = num1.split('.');
-                    busTimes.forEach(busTime => {
-                        let busMinute;
-                        if (/^\d+$/.test(busTime)) {
-                            busMinute = parseInt(busTime, 10);
-                        } else {
-                            return; // 無効な時刻フォーマット
-                        }
+                    // 通常運行の場合、時間を解析
+                    const minuteMatch = busTimeEntry.match(/\d{2}/);
+                    if (minuteMatch) {
+                        const busMinute = parseInt(minuteMatch[0], 10);
+                        const busHour = parseInt(entry['time'], 10);
 
                         const busDateTime = new Date(
                             arrivalTime.getFullYear(),
@@ -133,17 +132,21 @@ function findNextBus(schedule, arrivalTime) {
                             busHour,
                             busMinute
                         );
+
+                        console.log(`Parsed Bus Time: ${busDateTime}`);
+
                         if (busDateTime >= arrivalTime) {
                             if (!nextBus || busDateTime < nextBus.time) {
                                 nextBus = {
                                     time: busDateTime,
                                     isTemporary: false
                                 };
+                                console.log(`Regular Next Bus Set to: ${busDateTime}`);
                             }
                         }
-                    });
+                    }
                 }
-            }
+            });
         }
     });
 
@@ -169,12 +172,14 @@ function findNextTrain(trainTimes, arrivalTime) {
             trainHour,
             train.minute
         );
+
         if (trainTime >= arrivalTime) {
             if (!nextTrain || trainTime < nextTrain.time) {
                 nextTrain = {
                     time: trainTime,
                     destination: train.destination
                 };
+                console.log(`Next Train Set to: ${trainTime}, Destination: ${train.destination}`);
             }
         }
     });
