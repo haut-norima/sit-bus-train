@@ -4,14 +4,14 @@
 //
 //制作者 CY25061
 const locations = {
-    "生協": {"walk": 2, "run": 1},
-    "記念館": {"walk": 3, "run": 2},
-    "2号館": {"walk": 3.5, "run": 2.5},
-    "3号館": {"walk": 3.5, "run": 2.5},
-    "4号館": {"walk": 5, "run": 3},
-    "5号館": {"walk": 5, "run": 3},
-    "6号館": {"walk": 5.5, "run": 3.5},
-    "図書館": {"walk": 5.5, "run": 3.5},
+    "生協": { "walk": 2, "run": 1 },
+    "記念館": { "walk": 3, "run": 2 },
+    "2号館": { "walk": 3.5, "run": 2.5 },
+    "3号館": { "walk": 3.5, "run": 2.5 },
+    "4号館": { "walk": 5, "run": 3 },
+    "5号館": { "walk": 5, "run": 3 },
+    "6号館": { "walk": 5.5, "run": 3.5 },
+    "図書館": { "walk": 5.5, "run": 3.5 },
 };
 
 const destinationSettings = {
@@ -68,7 +68,7 @@ function parseTrainTimes(entry, direction) {
                     const minute = parseInt(trainInfo.slice(1, 3), 10);
                     const destinationMark = trainInfo.charAt(0);
                     const destination = destinationSettings[destinationMark] || "不明";
-                    const hour = parseInt(entry['time'], 10); // time部分を時として扱う
+                    const hour = parseInt(entry['time'], 10); // 'time'は時間のみと仮定
                     const trainTime = new Date();
                     trainTime.setHours(hour, minute, 0, 0);
                     trainTimes.push({ time: trainTime, destination });
@@ -103,15 +103,31 @@ function findNextBus(schedule, arrivalTime) {
                 busTimes.forEach(busTime => {
                     let busMinute;
                     if (isTemporarySchedule) {
-                        const currentMinutes = arrivalTime.getMinutes();
-                        busMinute = currentMinutes; // 適時運行の場合、現在の分を使用
+                        // 適時運行の場合、出発時間を設定しない（常に利用可能）
+                        // ここでは仮に出発時刻を現在時刻から一定後とする
+                        busMinute = arrivalTime.getMinutes();
                     } else if (/^\d+$/.test(busTime)) {
                         busMinute = parseInt(busTime, 10);
                     } else {
                         return; // 無効な時刻フォーマット
                     }
 
-                    const busDateTime = new Date(arrivalTime.getFullYear(), arrivalTime.getMonth(), arrivalTime.getDate(), busHour, busMinute, 0, 0);
+                    const busDateTime = new Date(
+                        arrivalTime.getFullYear(),
+                        arrivalTime.getMonth(),
+                        arrivalTime.getDate(),
+                        busHour,
+                        busMinute,
+                        0,
+                        0
+                    );
+
+                    // 適時運行の場合、current timeから数分後に設定
+                    if (isTemporarySchedule) {
+                        // 例として、動的に出発時刻を設定（現実の運用に応じて調整）
+                        busDateTime.setMinutes(busDateTime.getMinutes() + 1); // 1分後
+                    }
+
                     if (busDateTime >= arrivalTime) {
                         if (!nextBus || busDateTime < nextBus.time) {
                             nextBus = {
