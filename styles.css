@@ -1,11 +1,17 @@
 /* 基本スタイル */
-body, html {
+body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f5f7fa;
     margin: 0;
     padding: 0;
-    height: 100%;
     color: #333;
+    height: 100%;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 .container {
@@ -19,7 +25,7 @@ body, html {
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    min-height: 100vh; /* ビューポート全体の高さを確保 */
+    min-height: 100vh; /* ビューポート全体の高さ */
 }
 
 h1 {
@@ -77,8 +83,8 @@ h1 {
 .messages {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center; /* 水平方向に中央揃え */
-    align-items: center;     /* 垂直方向に中央揃え */
+    justify-content: center;
+    align-items: center; /* 垂直方向に中央揃え */
     gap: 20px;
     width: 100%;
     max-width: 1200px;
@@ -120,30 +126,25 @@ h1 {
     color: #555;
 }
 
-/* メッセージの種類に応じたスタイル */
-
-/* 太字のメッセージ（<strong>タグ） */
-.location-message strong {
+/* メッセージの種類ごとのスタイル */
+.message-type-ad-hoc {
     font-weight: bold;
-    color: #d9534f; /* 赤色 */
+    color: #1e90ff; /* 青 */
 }
 
-/* 余裕をもって移動できます用のスタイル */
-.message-normal {
+.message-type-roomy {
     font-weight: bold;
-    color: #5cb85c; /* 緑色 */
+    color: #28a745; /* 緑 */
 }
 
-/* すぐ出発すれば間に合います用のスタイル */
-.message-warning {
+.message-type-immediately {
     font-weight: bold;
-    color: #f0ad4e; /* オレンジ色 */
+    color: #ffc107; /* 黄色 */
 }
 
-/* 急げば間に合います用のスタイル */
-.message-danger {
+.message-type-rush {
     font-weight: bold;
-    color: #d9534f; /* 赤色 */
+    color: #dc3545; /* 赤 */
 }
 
 /* アニメーショントランジション */
